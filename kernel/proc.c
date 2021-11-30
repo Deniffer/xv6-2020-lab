@@ -127,6 +127,10 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  //new add
+  p->funcp = (void*) 0;
+  p->pticks = 0;
+
   return p;
 }
 

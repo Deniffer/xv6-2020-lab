@@ -57,7 +57,6 @@ sys_sleep(void)
 {
   int n;
   uint ticks0;
-
   if(argint(0, &n) < 0)
     return -1;
   acquire(&tickslock);
@@ -70,6 +69,8 @@ sys_sleep(void)
     sleep(&ticks, &tickslock);
   }
   release(&tickslock);
+  backtrace();
+
   return 0;
 }
 
@@ -94,4 +95,16 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+
+// new added
+uint64 
+sys_sigreturn(){
+  return 0;
+}
+
+uint64
+sys_sigalarm(){
+  return 0;
 }
