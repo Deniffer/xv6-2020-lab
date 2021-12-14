@@ -100,11 +100,31 @@ sys_uptime(void)
 
 // new added
 uint64 
-sys_sigreturn(){
+sys_sigreturn(void){
+  struct proc * p = myproc();
+  if(p->alarmWorking){
+    memmove(p->trapframe,&p->alarmtrap,sizeof(struct trapframe));
+    p->alarmWorking = 0;
+  }
   return 0;
 }
 
 uint64
-sys_sigalarm(){
+sys_sigalarm(void){
+  int n;
+  uint64 handler;
+  struct proc * p = myproc();
+  if(argint(0,&n) < 0)
+    return -1;
+  
+  if(argaddr(1,&handler) < 0)
+    return -1;
+
+  acquire(&p->lock);
+  //assign the function pointer && store the interval
+  p->alarmhandler = (void*)handler;
+  p->alarmInterval = n;
+  release(&p->lock);
+
   return 0;
 }
