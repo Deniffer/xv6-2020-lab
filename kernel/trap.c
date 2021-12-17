@@ -73,6 +73,7 @@ usertrap(void)
     uint64 va = PGROUNDDOWN(r_stval());
     printf("stval : %x, myproc->sz: %x\n",r_stval(),p->sz);
     struct proc* p = myproc();
+    vmprint(p->pagetable);
     if (va < p->sz){
       char* mem;
       printf("Allocate space for current process \n");
@@ -81,7 +82,8 @@ usertrap(void)
       if(mappages(p->pagetable, va, PGSIZE, (uint64)mem, PTE_W|PTE_X|PTE_R|PTE_U) != 0){
           kfree(mem);
           //uvmdealloc(p->pagetable, va+PGSIZE, va);
-      } 
+      }
+      vmprint(p->pagetable);
     }
   }else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
