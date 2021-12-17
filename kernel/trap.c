@@ -67,7 +67,23 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
-  } else {
+  } else if(r_scause() == 13 || r_scause() == 15){
+    // means page fault  13 means load page fault and 15 means store page fault
+    // 13 -> read fault  15 ->write fault
+    uint64 va = PGROUNDDOWN(r_stval());
+    printf("stval : %x, myproc->sz: %x\n",r_stval(),p->sz);
+    struct proc* p = myproc();
+    if (va < p->sz){
+      char* mem;
+      printf("Allocate space for current process \n");
+      mem = kalloc();
+      memset(mem,0,PGSIZE);
+      if(mappages(p->pagetable, va, PGSIZE, (uint64)mem, PTE_W|PTE_X|PTE_R|PTE_U) != 0){
+          kfree(mem);
+          //uvmdealloc(p->pagetable, va+PGSIZE, va);
+      } 
+    }
+  }else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
     p->killed = 1;

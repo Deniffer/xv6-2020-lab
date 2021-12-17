@@ -47,8 +47,10 @@ sys_sbrk(void)
   if(argint(0, &n) < 0)
     return -1;
   addr = myproc()->sz;
-  if(growproc(n) < 0)
-    return -1;
+  //if(growproc(n) < 0)
+  //  return -1;
+  printf("current proc size 0x%x, n = 0x%x\n",addr,n);
+  myproc()->sz += n;
   return addr;
 }
 
