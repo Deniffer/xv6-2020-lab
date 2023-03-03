@@ -121,6 +121,13 @@ found:
     return 0;
   }
 
+  // alloc kernel pgtable for proc
+  p->kernel_pgtable = alloc_kernel_pgtable_for_proc();
+  if (p->kernel_pgtable == 0) {
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
   // Set up new context to start executing at forkret,
   // which returns to user space.
   memset(&p->context, 0, sizeof(p->context));
@@ -141,6 +148,9 @@ freeproc(struct proc *p)
   p->trapframe = 0;
   if(p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
+  if(p->kernel_pgtable)
+    kfree(p->kernel_pgtable);
+
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -471,6 +481,8 @@ scheduler(void)
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
         // before jumping back to us.
+        w_satp(MAKE_SATP(p->kernel_pgtable));
+        sfence_vma();
         p->state = RUNNING;
         c->proc = p;
         swtch(&c->context, &p->context);
@@ -482,6 +494,7 @@ scheduler(void)
         found = 1;
       }
       release(&p->lock);
+      kvminithart();
     }
 #if !defined (LAB_FS)
     if(found == 0) {

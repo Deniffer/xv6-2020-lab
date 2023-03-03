@@ -15,6 +15,20 @@ extern char etext[];  // kernel.ld sets this to end of kernel code.
 
 extern char trampoline[]; // trampoline.S
 
+pagetable_t
+alloc_kernel_pgtable_for_proc()
+{
+  pagetable_t kpgtabel = (pagetable_t) kalloc();
+  if (kpgtabel == 0) {
+    return 0;
+  }
+  memset(kpgtabel, 0, PGSIZE);
+  for (int i=0; i< 512; i++) {
+    kpgtabel[i] = kernel_pagetable[i];
+  }
+  return kpgtabel;
+}
+
 /*
  * create a direct-map page table for the kernel.
  */
@@ -460,9 +474,9 @@ __vmprint(pagetable_t pgtable, int level)
       printf("%s%d: pte %p pa %p\n",dot,i,pte,child);
       __vmprint((uint64 *)child, level+1);
     }
-    if ((pte & PTE_V) && level == 2) {
-      printf("%s%d: pte %p pa %p\n",dot,i,pte,PTE2PA(pte));
-    }
+    // if ((pte & PTE_V) && level == 2) {
+    //   printf("%s%d: pte %p pa %p\n",dot,i,pte,PTE2PA(pte));
+    // }
   }
 }
 
