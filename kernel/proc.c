@@ -229,6 +229,9 @@ userinit(void)
   // allocate one user page and copy init's instructions
   // and data into it.
   uvminit(p->pagetable, initcode, sizeof(initcode));
+  // install map to proc->kernel pgtabel
+  vmcopy(p->pagetable, p->kernel_pgtable, sizeof(initcode), 1);
+
   p->sz = PGSIZE;
 
   // prepare for the very first "return" from kernel to user.
@@ -253,11 +256,12 @@ growproc(int n)
 
   sz = p->sz;
   if(n > 0){
-    if((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
+    if((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0 || kvmalloc(p->kernel_pgtable, sz, sz+n) == 0) {
       return -1;
     }
   } else if(n < 0){
     sz = uvmdealloc(p->pagetable, sz, sz + n);
+    uvmdealloc(p->kernel_pgtable, sz, sz + n);
   }
   p->sz = sz;
   return 0;
@@ -278,12 +282,20 @@ fork(void)
   }
 
   // Copy user memory from parent to child.
-  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+  vmprint(p->pagetable);
+  if(vmcopy(p->pagetable, np->pagetable, p->sz, 0) < 0){
     freeproc(np);
     release(&np->lock);
     return -1;
   }
   np->sz = p->sz;
+
+  // Install User memory to proc->kernel_pgtable
+  if(vmcopy(p->pagetable, np->kernel_pgtable, p->sz, 1) < 0) {
+    freeproc(np);
+    release(&np->lock);
+    return -1;
+  }
 
   np->parent = p;
 
